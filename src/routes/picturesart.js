@@ -53,7 +53,7 @@ router.post("/", (req, res) => {
   let imageFileName = "";
 
   if (req.files) {
-    const imageToUpload = req.files.file;
+    const imageToUpload = req.files.file1;
 
     const ext = path.extname(imageToUpload.name); //dd.jpg
 
