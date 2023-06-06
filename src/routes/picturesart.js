@@ -43,6 +43,40 @@ router.get("/", (req, res) => {
   });
 });
 
+const getInsertPicturesArtQuery = (idNewPicture, imagesFileNames) => {
+  const sql = `INSERT INTO imagenes_cuadros_arte (id_cuadros_arte, file_image)
+  VALUES (?,?), (?, ?), (?, ?), (?, ?)`;
+
+  const values = [];
+
+  imagesFileNames.forEach((file) => {
+    values.push(idNewPicture);
+    values.push(file);
+  });
+
+  return { sql, values };
+};
+
+const uploadImages = (filesToUpload) => {
+  let imageFileName = "";
+  const imagesFileNames = [];
+
+  let i = 1;
+
+  for (let file in filesToUpload) {
+    const imageToUpload = filesToUpload[file];
+    const ext = path.extname(imageToUpload.name);
+
+    imageFileName = `${Date.now()}_${i}${ext}`;
+    i++;
+
+    imagesFileNames.push(imageFileName);
+    imageToUpload.mv(`./public/images/pictures_art/${imageFileName}`);
+  }
+
+  return imagesFileNames;
+};
+
 router.post("/", (req, res) => {
   const newName = req.body.newName;
   const newPrice = req.body.newPrice;
@@ -50,25 +84,12 @@ router.post("/", (req, res) => {
 
   console.log(newName, newPrice, newDescription);
 
-  let imageFileName = "";
-
-  const imagesFileNames = [];
+  let imagesFileNames = [];
 
   console.log(req.files);
 
   if (req.files) {
-    let i = 1;
-
-    for (let file in req.files) {
-      const imageToUpload = req.files[file];
-      const ext = path.extname(imageToUpload.name);
-
-      imageFileName = `${Date.now()}_${i}${ext}`;
-      i++;
-
-      imagesFileNames.push(imageFileName);
-      imageToUpload.mv(`./public/images/pictures_art/${imageFileName}`);
-    }
+    imagesFileNames = uploadImages(req.files);
   }
 
   console.log("Nombres archivos a subir...", imagesFileNames);
@@ -88,15 +109,10 @@ router.post("/", (req, res) => {
 
       const idNewPicture = result.insertId;
 
-      const sql = `INSERT INTO imagenes_cuadros_arte (id_cuadros_arte, file_image)
-                      VALUES (?,?), (?, ?), (?, ?), (?, ?)`;
-
-      const values = []; //idNewPicture, imageFileName
-
-      imagesFileNames.forEach((file) => {
-        values.push(idNewPicture);
-        values.push(file);
-      });
+      const { sql, values } = getInsertPicturesArtQuery(
+        idNewPicture,
+        imagesFileNames
+      );
 
       connection.query(sql, values, (error, result) => {
         if (error) {
@@ -141,20 +157,14 @@ router.put("/:id", (req, res) => {
 
   const idObraEdit = req.params.id;
 
-  let imageFileName = "";
-
   if (req.files) {
-    const imageToUpload = req.files.file;
+    let imagesFileNames = [];
 
-    const ext = path.extname(imageToUpload.name); //dd.jpg
+    if (req.files) {
+      imagesFileNames = uploadImages(req.files);
+    }
 
-    console.log(ext);
-
-    imageFileName = Date.now() + ext;
-
-    console.log(imageFileName);
-
-    imageToUpload.mv(`./public/images/pictures_art/${imageFileName}`);
+    console.log("Nombres archivos a subir...", imagesFileNames);
 
     //1- Borro el archivo original
     // 1.1 -> Avergiuar el nombre del archivo/s a eliminar
@@ -167,52 +177,52 @@ router.put("/:id", (req, res) => {
       if (error) {
         console.log(error.message);
       } else {
-        // 1.2 -> Elimno
+        // 1.2 -> Elimino
 
-        fs.unlink(
-          `./public/images/pictures_art/${result[0].file_image}`,
-          (err) => {
-            if (err) {
-              console.log("Error al borrar el archivo");
-            } else {
-              console.log("Archivo borrado!");
-            }
-            //2- Borro los registros de la tabla imagenes_cuadros_arte del id que me envien
-            const sqlDeleteThree = `DELETE  
+        //Eliminar los 4 archivos de forma sincrona
+        result.forEach((row) =>
+          fs.unlinkSync(`./public/images/pictures_art/${row.file_image}`)
+        );
+
+        //2- Borro los registros de la tabla imagenes_cuadros_arte del id que me envien
+        const sqlDeleteThree = `DELETE  
                                       FROM imagenes_cuadros_arte 
                                       WHERE id_cuadros_arte="${idObraEdit}"`;
 
-            connection.query(sqlDeleteThree, (error, result) => {
-              if (error) {
-                console.log(error.message);
-              } else {
-                console.log(result);
+        connection.query(sqlDeleteThree, (error, result) => {
+          if (error) {
+            console.log(error.message);
+          } else {
+            console.log(result);
 
-                //3- Hago insert de la/s nueva/s imagen/es
+            //3- Hago insert de la/s nueva/s imagen/es
 
-                const sql = `INSERT INTO imagenes_cuadros_arte (id_cuadros_arte, file_image)
+            /*                 const sql = `INSERT INTO imagenes_cuadros_arte (id_cuadros_arte, file_image)
                       VALUES(?,?)`;
 
-                const values = [idObraEdit, imageFileName];
+                const values = [idObraEdit, imageFileName]; */
 
-                connection.query(sql, values, (error, result) => {
-                  if (error) {
-                    console.log(error.message);
-                    res.json({ message: "error to upload the picture" });
-                  } else {
-                    updatePictureArt({
-                      newName: req.body.newName,
-                      newPrice: req.body.newPrice,
-                      newDescription: req.body.newDescription,
-                      pictureArtId: req.params.id,
-                      res,
-                    });
-                  }
+            const { sql, values } = getInsertPicturesArtQuery(
+              idObraEdit,
+              imagesFileNames
+            );
+
+            connection.query(sql, values, (error, result) => {
+              if (error) {
+                console.log(error.message);
+                res.json({ message: "error to upload the picture" });
+              } else {
+                updatePictureArt({
+                  newName: req.body.newName,
+                  newPrice: req.body.newPrice,
+                  newDescription: req.body.newDescription,
+                  pictureArtId: req.params.id,
+                  res,
                 });
               }
             });
           }
-        );
+        });
       }
     });
   } else {
