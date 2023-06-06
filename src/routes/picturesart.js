@@ -52,19 +52,26 @@ router.post("/", (req, res) => {
 
   let imageFileName = "";
 
+  const imagesFileNames = [];
+
+  console.log(req.files);
+
   if (req.files) {
-    const imageToUpload = req.files.file1;
+    let i = 1;
 
-    const ext = path.extname(imageToUpload.name); //dd.jpg
+    for (let file in req.files) {
+      const imageToUpload = req.files[file];
+      const ext = path.extname(imageToUpload.name);
 
-    console.log(ext);
+      imageFileName = `${Date.now()}_${i}${ext}`;
+      i++;
 
-    imageFileName = Date.now() + ext;
-
-    console.log(imageFileName);
-
-    imageToUpload.mv(`./public/images/pictures_art/${imageFileName}`);
+      imagesFileNames.push(imageFileName);
+      imageToUpload.mv(`./public/images/pictures_art/${imageFileName}`);
+    }
   }
+
+  console.log("Nombres archivos a subir...", imagesFileNames);
 
   const sql = `INSERT INTO cuadros_arte (name, price, description)
                 VALUES (?, ?, ?)`;
@@ -82,9 +89,14 @@ router.post("/", (req, res) => {
       const idNewPicture = result.insertId;
 
       const sql = `INSERT INTO imagenes_cuadros_arte (id_cuadros_arte, file_image)
-                      VALUES(?,?)`;
+                      VALUES (?,?), (?, ?), (?, ?), (?, ?)`;
 
-      const values = [idNewPicture, imageFileName];
+      const values = []; //idNewPicture, imageFileName
+
+      imagesFileNames.forEach((file) => {
+        values.push(idNewPicture);
+        values.push(file);
+      });
 
       connection.query(sql, values, (error, result) => {
         if (error) {
