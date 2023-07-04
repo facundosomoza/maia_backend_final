@@ -8,50 +8,63 @@ const router = express.Router();
 
 router.get("/", (req, res) => {
   const sql = `SELECT * 
-               FROM cuadros_arte`;
+               FROM cuadros_arte
+               ORDER BY order_picture`;
 
   connection.query(sql, (error, resultObras) => {
+    console.log("OBRAS...", resultObras);
+
     if (error) {
       console.log(error.message);
       res.status(500).json({ message: "error to get the pictures" });
     } else {
       let cant = 0;
 
-      resultObras.forEach((resul) => {
-        const sqlImagenesDeLaObra = `SELECT *
-                                     FROM imagenes_cuadros_arte
-                                     WHERE id_cuadros_arte = ${resul.id}`;
+      if (resultObras.length > 0) {
+        resultObras.forEach((resul) => {
+          const sqlImagenesDeLaObra = `SELECT *
+                                      FROM imagenes_cuadros_arte
+                                      WHERE id_cuadros_arte = ${resul.id}
+                                      ORDER BY order_file`;
 
-        connection.query(sqlImagenesDeLaObra, (error, resultImagenes) => {
-          if (error) {
-            console.log(error.message);
-            res.status(500).json({ message: "error to get the pictures" });
-          } else {
-            console.log(resultImagenes);
+          connection.query(sqlImagenesDeLaObra, (error, resultImagenes) => {
+            if (error) {
+              console.log(error.message);
+              res.status(500).json({ message: "error to get the pictures" });
+            } else {
+              console.log(resultImagenes);
 
-            resul.images = resultImagenes;
+              resul.images = resultImagenes;
 
-            cant++;
+              cant++;
 
-            if (cant === resultObras.length) {
-              res.status(200).json(resultObras);
+              if (cant === resultObras.length) {
+                res.status(200).json(resultObras);
+              }
             }
-          }
+          });
         });
-      });
+      } else {
+        res.status(200).json(resultObras);
+      }
     }
   });
 });
 
-const getInsertPicturesArtQuery = (idNewPicture, imagesFileNames) => {
-  const sql = `INSERT INTO imagenes_cuadros_arte (id_cuadros_arte, file_image)
-  VALUES (?,?), (?, ?), (?, ?), (?, ?)`;
+const getInsertPicturesArtQuery = (idNewPicture, imageFiles) => {
+  const sql = `INSERT INTO imagenes_cuadros_arte (id_cuadros_arte, file_image, order_file)
+               VALUES  ${imageFiles
+                 .map((imageFileName) => "(?, ?, ?)")
+                 .join()}`;
 
   const values = [];
 
-  imagesFileNames.forEach((file) => {
+  console.log("IMAGENES A INSERTAR EN UPDATE", imageFiles);
+
+  imageFiles.forEach((file) => {
     values.push(idNewPicture);
-    values.push(file);
+    values.push(file.name);
+    values.push(file.order);
   });
 
   return { sql, values };
@@ -82,7 +95,17 @@ router.post("/", (req, res) => {
   const newPrice = req.body.newPrice;
   const newDescription = req.body.newDescription;
 
-  console.log(newName, newPrice, newDescription);
+  const orderKeys = Object.keys(req.body).filter((key) =>
+    key.includes("order_")
+  );
+
+  console.log(newName, newPrice, newDescription, orderKeys);
+
+  orderKeys.forEach((orderKey) => {
+    const pos = orderKey.split("_")[1];
+
+    console.log(pos, req.body[orderKey]);
+  });
 
   let imagesFileNames = [];
 
@@ -94,32 +117,58 @@ router.post("/", (req, res) => {
 
   console.log("Nombres archivos a subir...", imagesFileNames);
 
-  const sql = `INSERT INTO cuadros_arte (name, price, description)
-                VALUES (?, ?, ?)`;
+  const imageFiles = imagesFileNames.map((imageFileName, index) => {
+    return { name: imageFileName, order: req.body[`order_${index + 1}`] };
+  });
 
-  const values = [newName, newPrice, newDescription];
+  console.log("imageFiles...", imageFiles);
 
-  //STEP 1: Guardar la obra en la tabla "cuadros_arte"
-  connection.query(sql, values, (error, result) => {
+  const lastOrderQuery = `SELECT MAX(order_picture) AS last_order
+                          FROM cuadros_arte`;
+
+  connection.query(lastOrderQuery, (error, result) => {
+    let lastOrder = 0;
+
     if (error) {
       console.log(error.message);
       res.json({ message: "error to upload the picture" });
     } else {
-      //STEP 2: Guardar la ruta de la imagen en la tabla "imagenes_cuadros_arte"
+      if (result.length > 0 && result[0]) {
+        lastOrder = result[0].last_order;
+      }
 
-      const idNewPicture = result.insertId;
+      lastOrder++;
 
-      const { sql, values } = getInsertPicturesArtQuery(
-        idNewPicture,
-        imagesFileNames
-      );
+      const sql = `INSERT INTO cuadros_arte (name, price, description, order_picture)
+                VALUES (?, ?, ?, ?)`;
 
+      const values = [newName, newPrice, newDescription, lastOrder];
+
+      //Guardar la obra en la tabla "cuadros_arte"
       connection.query(sql, values, (error, result) => {
         if (error) {
           console.log(error.message);
           res.json({ message: "error to upload the picture" });
         } else {
-          res.json(result);
+          // Guardar la ruta de la imagen en la tabla "imagenes_cuadros_arte"
+
+          const idNewPicture = result.insertId;
+
+          const { sql, values } = getInsertPicturesArtQuery(
+            idNewPicture,
+            imageFiles
+          );
+
+          console.log("SQL...", sql, values);
+
+          connection.query(sql, values, (error, result) => {
+            if (error) {
+              console.log(error.message);
+              res.json({ message: "error to upload the picture" });
+            } else {
+              res.json(result);
+            }
+          });
         }
       });
     }
@@ -151,82 +200,84 @@ const updatePictureArt = ({
   });
 };
 
-router.put("/:id", (req, res) => {
-  console.log(req.body);
-  console.log(req.params.id);
+router.put("/order_pictures", (req, res) => {
+  const newOrders = req.body;
 
-  const idObraEdit = req.params.id;
+  const cantImages = newOrders.length;
 
-  if (req.files) {
-    let imagesFileNames = [];
+  let updatedImagesCounter = 0;
 
-    if (req.files) {
-      imagesFileNames = uploadImages(req.files);
-    }
+  newOrders.forEach(({ id, order_picture }) => {
+    console.log(id, order_picture);
+    const sql = `UPDATE cuadros_arte
+                 SET order_picture = ${order_picture}
+                 WHERE id = ${id}`;
 
-    console.log("Nombres archivos a subir...", imagesFileNames);
-
-    //1- Borro el archivo original
-    // 1.1 -> Avergiuar el nombre del archivo/s a eliminar
-
-    const sqlDelete = `SELECT file_image
-                       FROM imagenes_cuadros_arte
-                       WHERE id_cuadros_arte="${idObraEdit}"`;
-
-    connection.query(sqlDelete, (error, result) => {
+    connection.query(sql, (error, result) => {
       if (error) {
         console.log(error.message);
+        res.status(500).json({ message: "Error updating picture order" });
       } else {
-        // 1.2 -> Elimino
+        updatedImagesCounter++;
 
-        //Eliminar los 4 archivos de forma sincrona
-        result.forEach((row) =>
-          fs.unlinkSync(`./public/images/pictures_art/${row.file_image}`)
-        );
-
-        //2- Borro los registros de la tabla imagenes_cuadros_arte del id que me envien
-        const sqlDeleteThree = `DELETE  
-                                      FROM imagenes_cuadros_arte 
-                                      WHERE id_cuadros_arte="${idObraEdit}"`;
-
-        connection.query(sqlDeleteThree, (error, result) => {
-          if (error) {
-            console.log(error.message);
-          } else {
-            console.log(result);
-
-            //3- Hago insert de la/s nueva/s imagen/es
-
-            /*                 const sql = `INSERT INTO imagenes_cuadros_arte (id_cuadros_arte, file_image)
-                      VALUES(?,?)`;
-
-                const values = [idObraEdit, imageFileName]; */
-
-            const { sql, values } = getInsertPicturesArtQuery(
-              idObraEdit,
-              imagesFileNames
-            );
-
-            connection.query(sql, values, (error, result) => {
-              if (error) {
-                console.log(error.message);
-                res.json({ message: "error to upload the picture" });
-              } else {
-                updatePictureArt({
-                  newName: req.body.newName,
-                  newPrice: req.body.newPrice,
-                  newDescription: req.body.newDescription,
-                  pictureArtId: req.params.id,
-                  res,
-                });
-              }
-            });
-          }
-        });
+        if (updatedImagesCounter === cantImages) {
+          res
+            .status(200)
+            .json({ message: "Picture order updated succesfully" });
+        }
       }
+    });
+  });
+});
+
+router.put("/:id", (req, res) => {
+  const orderKeys = Object.keys(req.body).filter((key) =>
+    key.includes("order_")
+  );
+
+  orderKeys.forEach((key) => {
+    console.log(key.split("_")[1], req.body[key]);
+
+    const id_cuadros_arte = key.split("_")[1];
+    const newOrder = req.body[key];
+
+    const sql = `UPDATE imagenes_cuadros_arte 
+                 SET order_file="${newOrder}"
+                 WHERE id=${id_cuadros_arte}`;
+
+    console.log(sql);
+
+    connection.query(sql, (error, result) => {
+      if (error) {
+        console.log(error.message);
+        //res.json({ message: "error to update the picture order" });
+      }
+    });
+  });
+
+  if (req.files) {
+    for (let file in req.files) {
+      const imageToUpload = req.files[file];
+
+      const fileOriginalIndex = file.charAt(4);
+
+      const originalFileName = req.body[`originalFile${fileOriginalIndex}`]
+        .split("/")
+        .pop();
+
+      imageToUpload.mv(`./public/images/pictures_art/${originalFileName}`);
+    }
+
+    updatePictureArt({
+      newName: req.body.newName,
+      newPrice: req.body.newPrice,
+      newDescription: req.body.newDescription,
+      pictureArtId: req.params.id,
+      res,
     });
   } else {
     console.log("No hay archivo para modificar!");
+
     updatePictureArt({
       newName: req.body.newName,
       newPrice: req.body.newPrice,
@@ -235,6 +286,113 @@ router.put("/:id", (req, res) => {
       res,
     });
   }
+
+  console.log(req.body);
+});
+
+router.put("/:id/sold", (req, res) => {
+  const imageId = req.params.id;
+  const { sold } = req.body;
+
+  const sql = `UPDATE cuadros_arte
+                SET sold = ${sold ? 1 : 0}
+                WHERE id = ${imageId}`;
+
+  connection.query(sql, (error, result) => {
+    if (error) {
+      console.log(error.message);
+      res.status(500).json({ message: "error updating sold" });
+    } else {
+      res.status(200).json({ message: "succesfully updated" });
+    }
+  });
+});
+
+router.delete("/:id", (req, res) => {
+  const pictureId = req.params.id;
+
+  console.log(pictureId);
+
+  const sqlOrderCuadroArteToDelete = `SELECT order_picture
+                                      FROM cuadros_arte
+                                      WHERE id=?`;
+
+  connection.query(sqlOrderCuadroArteToDelete, [pictureId], (error, result) => {
+    if (error) {
+      console.log(error.message);
+      res.status(500).json({ message: "Error deleting picture" });
+    } else {
+      console.log("El order es", result[0].order_picture);
+
+      const orderImageToDelete = result[0].order_picture;
+
+      const sqlImagesCuadroArte = `SELECT file_image
+                               FROM imagenes_cuadros_arte
+                               WHERE id_cuadros_arte = ${pictureId}`;
+
+      connection.query(sqlImagesCuadroArte, (error, result) => {
+        if (error) {
+          console.log(error.message);
+          res.status(500).json({ message: "Error deleting picture" });
+        } else {
+          const filesToDelete = result;
+
+          for (let fileToDelete of filesToDelete) {
+            console.log(
+              "borrar",
+              `./public/images/pictures_art/${fileToDelete.file_image}`
+            );
+            fs.unlinkSync(
+              `./public/images/pictures_art/${fileToDelete.file_image}`
+            );
+          }
+
+          const deleteImagesQuery = `DELETE FROM imagenes_cuadros_arte
+                              WHERE id_cuadros_arte = ${pictureId}`;
+
+          connection.query(deleteImagesQuery, (error, result) => {
+            if (error) {
+              console.log(error.message);
+              res.status(500).json({ message: "Error deleting picture" });
+            } else {
+              const deletePictureQuery = `DELETE FROM cuadros_arte
+                                          WHERE id = ${pictureId}`;
+
+              connection.query(deletePictureQuery, (error, result) => {
+                if (error) {
+                  console.log(error.message);
+                  res.status(500).json({ message: "Error deleting picture" });
+                } else {
+                  //Reorder
+
+                  const sqlReorderPictures = `UPDATE cuadros_arte
+                                              SET order_picture = order_picture - 1
+                                              WHERE order_picture > ?`;
+
+                  connection.query(
+                    sqlReorderPictures,
+                    [orderImageToDelete],
+                    (error, result) => {
+                      if (error) {
+                        console.log(error.message);
+                        res
+                          .status(500)
+                          .json({ message: "Error deleting picture" });
+                      } else {
+                        res
+                          .status(200)
+                          .json({ message: "picture deleted succesfully" });
+                      }
+                    }
+                  );
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+  });
 });
 
 module.exports = router;

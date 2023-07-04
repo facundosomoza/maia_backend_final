@@ -19,6 +19,12 @@ const picturesArtRouter = require("./routes/picturesart");
 
 const cartRouter = require("./routes/cart");
 
+const formContactRouter = require("./routes/form_contact");
+
+const forgotPasswordRouter = require("./routes/forgot_password");
+
+const adminPictures = require("./routes/admin-pictures");
+
 const app = express();
 
 app.use(express.static("public"));
@@ -47,5 +53,11 @@ app.use("/auth", authRouter);
 app.use("/picturesart", picturesArtRouter);
 
 app.use("/cart", cartRouter);
+
+app.use("/form_contact", formContactRouter);
+
+app.use("/forgot_password", forgotPasswordRouter);
+
+app.use("/admin-pictures", adminPictures);
 
 app.listen(8001);
