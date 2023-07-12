@@ -4,3 +4,6 @@
 # sessions
 /sessions
 /src/sessions
+
+#data
+/src/config
