@@ -1,10 +1,14 @@
 const mysql = require("mysql2");
 
+const { getConfig } = require("./utils/config");
+
+const { HOST, USER, PASSWORD, DATABASE } = getConfig().db;
+
 const connection = mysql.createConnection({
-  host: "localhost",
-  database: "maia_art",
-  user: "root",
-  password: "",
+  host: HOST,
+  database: DATABASE,
+  user: USER,
+  password: PASSWORD,
 });
 
 connection.connect((error) => {

@@ -25,6 +25,8 @@ const forgotPasswordRouter = require("./routes/forgot_password");
 
 const adminPictures = require("./routes/admin-pictures");
 
+const biographyPictures = require("./routes/biography-pictures");
+
 const app = express();
 
 app.use(express.static("public"));
@@ -59,5 +61,7 @@ app.use("/form_contact", formContactRouter);
 app.use("/forgot_password", forgotPasswordRouter);
 
 app.use("/admin-pictures", adminPictures);
+
+app.use("/biography-pictures", biographyPictures);
 
 app.listen(8001);
