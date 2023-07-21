@@ -1,9 +1,4 @@
 const express = require("express");
-const https = require("https");
-const http = require("http");
-
-const fs = require("fs");
-
 const cors = require("cors");
 
 //se encargan de maejar las cookies
@@ -69,25 +64,4 @@ app.use("/admin-pictures", adminPictures);
 
 app.use("/biography-pictures", biographyPictures);
 
-//app.listen(8001);
-
-const httpsServer = https.createServer(
-  {
-    key: fs.readFileSync("src/certs/maiatsadzeart_com.key"),
-    cert: fs.readFileSync("src/certs/maiatsadzeart_com.crt"),
-  },
-  app
-);
-
-httpsServer.listen(443, () => {
-  console.log("HTTPS running... port 443");
-});
-
-http
-  .createServer((req, res) => {
-    res.writeHead(301, {
-      Location: "https://" + req.headers["host"] + req.url,
-    });
-    res.end();
-  })
-  .listen(80);
+app.listen(8001);
