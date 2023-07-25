@@ -347,44 +347,57 @@ router.delete("/:id", (req, res) => {
             );
           }
 
-          const deleteImagesQuery = `DELETE FROM imagenes_cuadros_arte
-                              WHERE id_cuadros_arte = ${pictureId}`;
+          //Borro primero los items de los carritos que apunten a esta pictureart
+          const deletePictureArtFromCarts = `DELETE FROM carrito
+                                             WHERE id_obra_arte = ${pictureId}`;
 
-          connection.query(deleteImagesQuery, (error, result) => {
+          connection.query(deletePictureArtFromCarts, (error, result) => {
             if (error) {
               console.log(error.message);
               res.status(500).json({ message: "Error deleting picture" });
             } else {
-              const deletePictureQuery = `DELETE FROM cuadros_arte
-                                          WHERE id = ${pictureId}`;
+              const deleteImagesQuery = `DELETE FROM imagenes_cuadros_arte
+              WHERE id_cuadros_arte = ${pictureId}`;
 
-              connection.query(deletePictureQuery, (error, result) => {
+              connection.query(deleteImagesQuery, (error, result) => {
                 if (error) {
                   console.log(error.message);
                   res.status(500).json({ message: "Error deleting picture" });
                 } else {
-                  //Reorder
+                  const deletePictureQuery = `DELETE FROM cuadros_arte
+                          WHERE id = ${pictureId}`;
 
-                  const sqlReorderPictures = `UPDATE cuadros_arte
-                                              SET order_picture = order_picture - 1
-                                              WHERE order_picture > ?`;
+                  connection.query(deletePictureQuery, (error, result) => {
+                    if (error) {
+                      console.log(error.message);
+                      res
+                        .status(500)
+                        .json({ message: "Error deleting picture" });
+                    } else {
+                      //Reorder
 
-                  connection.query(
-                    sqlReorderPictures,
-                    [orderImageToDelete],
-                    (error, result) => {
-                      if (error) {
-                        console.log(error.message);
-                        res
-                          .status(500)
-                          .json({ message: "Error deleting picture" });
-                      } else {
-                        res
-                          .status(200)
-                          .json({ message: "picture deleted succesfully" });
-                      }
+                      const sqlReorderPictures = `UPDATE cuadros_arte
+                              SET order_picture = order_picture - 1
+                              WHERE order_picture > ?`;
+
+                      connection.query(
+                        sqlReorderPictures,
+                        [orderImageToDelete],
+                        (error, result) => {
+                          if (error) {
+                            console.log(error.message);
+                            res
+                              .status(500)
+                              .json({ message: "Error deleting picture" });
+                          } else {
+                            res
+                              .status(200)
+                              .json({ message: "picture deleted succesfully" });
+                          }
+                        }
+                      );
                     }
-                  );
+                  });
                 }
               });
             }

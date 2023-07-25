@@ -8,6 +8,7 @@ const config = {
       PASSWORD: "",
       DATABASE: "maia_art",
     },
+    mode: "dev",
   },
   prod: {
     db: {
@@ -16,6 +17,7 @@ const config = {
       PASSWORD: "maiA2525",
       DATABASE: "maia_art",
     },
+    mode: "prod",
   },
 };
 

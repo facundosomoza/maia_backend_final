@@ -31,6 +31,7 @@ const forgotPasswordRouter = require("./routes/forgot_password");
 const adminPictures = require("./routes/admin-pictures");
 
 const biographyPictures = require("./routes/biography-pictures");
+const { getConfig } = require("./utils/config");
 
 const app = express();
 
@@ -69,25 +70,27 @@ app.use("/admin-pictures", adminPictures);
 
 app.use("/biography-pictures", biographyPictures);
 
-//app.listen(8001);
+if (getConfig().mode === "dev") {
+  app.listen(8001);
+} else {
+  const httpsServer = https.createServer(
+    {
+      key: fs.readFileSync("src/certs/maiatsadzeart_com.key"),
+      cert: fs.readFileSync("src/certs/maiatsadzeart_com.crt"),
+    },
+    app
+  );
 
-const httpsServer = https.createServer(
-  {
-    key: fs.readFileSync("src/certs/maiatsadzeart_com.key"),
-    cert: fs.readFileSync("src/certs/maiatsadzeart_com.crt"),
-  },
-  app
-);
+  httpsServer.listen(8001, () => {
+    console.log("HTTPS running... port 8001");
+  });
+}
 
-httpsServer.listen(443, () => {
-  console.log("HTTPS running... port 443");
-});
-
-http
+/*http
   .createServer((req, res) => {
     res.writeHead(301, {
       Location: "https://" + req.headers["host"] + req.url,
     });
     res.end();
   })
-  .listen(80);
+  .listen(80); */
