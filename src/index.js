@@ -81,8 +81,8 @@ if (getConfig().mode === "dev") {
     app
   );
 
-  httpsServer.listen(8001, () => {
-    console.log("HTTPS running... port 8001");
+  httpsServer.listen(443, () => {
+    console.log("HTTPS running... port 443");
   });
 }
 

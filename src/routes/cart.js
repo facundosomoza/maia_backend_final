@@ -47,7 +47,8 @@ router.get("/:userId", (req, res) => {
           //Tengo que traer las imagenes desde la tabla imagenes_cuadros_arte que correspondan al id resu.id_obra_arte
           const sqlImagenes = `SELECT *
                                 FROM imagenes_cuadros_arte
-                                WHERE id_cuadros_arte=${cartItem.id_obra_arte}`;
+                                WHERE id_cuadros_arte=${cartItem.id_obra_arte}
+                                ORDER BY order_file`;
 
           connection.query(sqlImagenes, (error, result) => {
             if (error) {
