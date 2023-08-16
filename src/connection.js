@@ -20,4 +20,12 @@ connection.connect((error) => {
   }
 });
 
+//Fix to bd alive
+setInterval(() => {
+  if (connection) {
+    connection.query("SELECT id FROM biography_pictures");
+    console.log("Db Alive!");
+  }
+}, 600000);
+
 module.exports = connection;

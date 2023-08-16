@@ -31,6 +31,9 @@ const forgotPasswordRouter = require("./routes/forgot_password");
 const adminPictures = require("./routes/admin-pictures");
 
 const biographyPictures = require("./routes/biography-pictures");
+
+const paypalRouter = require("./routes/paypal");
+
 const { getConfig } = require("./utils/config");
 
 const app = express();
@@ -69,6 +72,8 @@ app.use("/forgot_password", forgotPasswordRouter);
 app.use("/admin-pictures", adminPictures);
 
 app.use("/biography-pictures", biographyPictures);
+
+app.use("/paypal", paypalRouter);
 
 if (getConfig().mode === "dev") {
   app.listen(8001);
