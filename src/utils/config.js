@@ -1,4 +1,4 @@
-const MODE = "dev"; //dev, prod
+const MODE = "prod"; //dev, prod
 
 const config = {
   dev: {

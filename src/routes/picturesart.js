@@ -6,14 +6,20 @@ const fs = require("fs");
 
 const router = express.Router();
 
-router.get("/", (req, res) => {
-  const sql = `SELECT * 
-               FROM cuadros_arte
-               ORDER BY order_picture`;
+const getPictures = (req, res, id) => {
+  const sqlValues = [];
 
-  connection.query(sql, (error, resultObras) => {
-    console.log("OBRAS...", resultObras);
+  let sql = `SELECT * 
+             FROM cuadros_arte`;
 
+  if (id) {
+    sql += ` WHERE id = ?`;
+    sqlValues.push(id);
+  } else {
+    sql += ` ORDER BY order_picture`;
+  }
+
+  connection.query(sql, sqlValues, (error, resultObras) => {
     if (error) {
       console.log(error.message);
       res.status(500).json({ message: "error to get the pictures" });
@@ -39,16 +45,34 @@ router.get("/", (req, res) => {
               cant++;
 
               if (cant === resultObras.length) {
-                res.status(200).json(resultObras);
+                if (id) {
+                  res.status(200).json(resultObras[0]);
+                } else {
+                  res.status(200).json(resultObras);
+                }
               }
             }
           });
         });
       } else {
-        res.status(200).json(resultObras);
+        if (id) {
+          res.status(200).json(resultObras[0]);
+        } else {
+          res.status(200).json(resultObras);
+        }
       }
     }
   });
+};
+
+router.get("/", (req, res) => {
+  getPictures(req, res);
+});
+
+router.get("/:id", (req, res) => {
+  const id = req.params.id;
+
+  getPictures(req, res, id);
 });
 
 const getInsertPicturesArtQuery = (idNewPicture, imageFiles) => {
@@ -322,88 +346,108 @@ router.delete("/:id", (req, res) => {
       console.log(error.message);
       res.status(500).json({ message: "Error deleting picture" });
     } else {
-      console.log("El order es", result[0].order_picture);
+      const sqlDeleteFromPurchasesDetail = `DELETE FROM purchases_detail
+                                            WHERE id_obra_arte = ?`;
 
-      const orderImageToDelete = result[0].order_picture;
+      const sqlValues = [pictureId];
 
-      const sqlImagesCuadroArte = `SELECT file_image
-                               FROM imagenes_cuadros_arte
-                               WHERE id_cuadros_arte = ${pictureId}`;
+      connection.query(
+        sqlDeleteFromPurchasesDetail,
+        sqlValues,
+        (errorDeleteFromPurchaseDetail, resultDeleteFromPurchaseDetail) => {
+          if (errorDeleteFromPurchaseDetail) {
+            res.status(500).json({ message: "Error deleting picture" });
+          } else {
+            console.log("El order es", result[0].order_picture);
 
-      connection.query(sqlImagesCuadroArte, (error, result) => {
-        if (error) {
-          console.log(error.message);
-          res.status(500).json({ message: "Error deleting picture" });
-        } else {
-          const filesToDelete = result;
+            const orderImageToDelete = result[0].order_picture;
 
-          for (let fileToDelete of filesToDelete) {
-            console.log(
-              "borrar",
-              `./public/images/pictures_art/${fileToDelete.file_image}`
-            );
-            fs.unlinkSync(
-              `./public/images/pictures_art/${fileToDelete.file_image}`
-            );
-          }
+            const sqlImagesCuadroArte = `SELECT file_image
+                                 FROM imagenes_cuadros_arte
+                                 WHERE id_cuadros_arte = ${pictureId}`;
 
-          //Borro primero los items de los carritos que apunten a esta pictureart
-          const deletePictureArtFromCarts = `DELETE FROM carrito
-                                             WHERE id_obra_arte = ${pictureId}`;
+            connection.query(sqlImagesCuadroArte, (error, result) => {
+              if (error) {
+                console.log(error.message);
+                res.status(500).json({ message: "Error deleting picture" });
+              } else {
+                const filesToDelete = result;
 
-          connection.query(deletePictureArtFromCarts, (error, result) => {
-            if (error) {
-              console.log(error.message);
-              res.status(500).json({ message: "Error deleting picture" });
-            } else {
-              const deleteImagesQuery = `DELETE FROM imagenes_cuadros_arte
-              WHERE id_cuadros_arte = ${pictureId}`;
-
-              connection.query(deleteImagesQuery, (error, result) => {
-                if (error) {
-                  console.log(error.message);
-                  res.status(500).json({ message: "Error deleting picture" });
-                } else {
-                  const deletePictureQuery = `DELETE FROM cuadros_arte
-                          WHERE id = ${pictureId}`;
-
-                  connection.query(deletePictureQuery, (error, result) => {
-                    if (error) {
-                      console.log(error.message);
-                      res
-                        .status(500)
-                        .json({ message: "Error deleting picture" });
-                    } else {
-                      //Reorder
-
-                      const sqlReorderPictures = `UPDATE cuadros_arte
-                              SET order_picture = order_picture - 1
-                              WHERE order_picture > ?`;
-
-                      connection.query(
-                        sqlReorderPictures,
-                        [orderImageToDelete],
-                        (error, result) => {
-                          if (error) {
-                            console.log(error.message);
-                            res
-                              .status(500)
-                              .json({ message: "Error deleting picture" });
-                          } else {
-                            res
-                              .status(200)
-                              .json({ message: "picture deleted succesfully" });
-                          }
-                        }
-                      );
-                    }
-                  });
+                for (let fileToDelete of filesToDelete) {
+                  console.log(
+                    "borrar",
+                    `./public/images/pictures_art/${fileToDelete.file_image}`
+                  );
+                  fs.unlinkSync(
+                    `./public/images/pictures_art/${fileToDelete.file_image}`
+                  );
                 }
-              });
-            }
-          });
+
+                //Borro primero los items de los carritos que apunten a esta pictureart
+                const deletePictureArtFromCarts = `DELETE FROM carrito
+                                               WHERE id_obra_arte = ${pictureId}`;
+
+                connection.query(deletePictureArtFromCarts, (error, result) => {
+                  if (error) {
+                    console.log(error.message);
+                    res.status(500).json({ message: "Error deleting picture" });
+                  } else {
+                    const deleteImagesQuery = `DELETE FROM imagenes_cuadros_arte
+                WHERE id_cuadros_arte = ${pictureId}`;
+
+                    connection.query(deleteImagesQuery, (error, result) => {
+                      if (error) {
+                        console.log(error.message);
+                        res
+                          .status(500)
+                          .json({ message: "Error deleting picture" });
+                      } else {
+                        const deletePictureQuery = `DELETE FROM cuadros_arte
+                            WHERE id = ${pictureId}`;
+
+                        connection.query(
+                          deletePictureQuery,
+                          (error, result) => {
+                            if (error) {
+                              console.log(error.message);
+                              res
+                                .status(500)
+                                .json({ message: "Error deleting picture" });
+                            } else {
+                              //Reorder
+
+                              const sqlReorderPictures = `UPDATE cuadros_arte
+                                SET order_picture = order_picture - 1
+                                WHERE order_picture > ?`;
+
+                              connection.query(
+                                sqlReorderPictures,
+                                [orderImageToDelete],
+                                (error, result) => {
+                                  if (error) {
+                                    console.log(error.message);
+                                    res.status(500).json({
+                                      message: "Error deleting picture",
+                                    });
+                                  } else {
+                                    res.status(200).json({
+                                      message: "picture deleted succesfully",
+                                    });
+                                  }
+                                }
+                              );
+                            }
+                          }
+                        );
+                      }
+                    });
+                  }
+                });
+              }
+            });
+          }
         }
-      });
+      );
     }
   });
 });

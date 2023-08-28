@@ -1,4 +1,5 @@
 const connection = require("../connection");
+const emailTypes = require("../utils/email_types");
 
 /* PAYPAL SANDBOX */
 
@@ -22,6 +23,7 @@ const express = require("express");
 
 const paypal = require("@paypal/checkout-server-sdk");
 const checkoutServerSdk = require("@paypal/checkout-server-sdk");
+const sendEmail = require("../utils/mailing");
 
 //SANDBOX ENVIRONMENT
 const paylEnv = new paypal.core.SandboxEnvironment(CLIENT_ID, CLIENT_SECRET);
@@ -243,7 +245,45 @@ router.post("/capture-order", async (req, res) => {
                     } else {
                       console.log(response);
 
-                      res.status(201).json(response);
+                      //Obtengo datos del comprador
+                      const sqlUser = `SELECT purchases.*, users.email
+                                       FROM purchases
+                                       INNER JOIN users
+                                         ON users.id = purchases.id_user
+                                       WHERE paypal_order_id = ?`;
+
+                      const valuesSqlUser = [paypalOrderId];
+
+                      connection.query(
+                        sqlUser,
+                        valuesSqlUser,
+                        (error, resultUser) => {
+                          //Obtengo datos del detalle de la compra
+
+                          const sqlCart = `SELECT ca.id, name, price_picture price
+                                            FROM purchases_detail pd 
+                                            INNER JOIN cuadros_arte ca
+                                              ON ca.id = pd.id_obra_arte
+                                            WHERE pd.id_purchase = (
+                                                                    SELECT id
+                                                                    FROM purchases
+                                                                    WHERE paypal_order_id = ? 
+                                                                    )
+                                            `;
+
+                          const valuesSqlCart = [paypalOrderId];
+
+                          connection.query(
+                            sqlCart,
+                            valuesSqlCart,
+                            (error, resultCart) => {
+                              sendEmail(resultCart, resultUser[0]);
+
+                              res.status(201).json(response);
+                            }
+                          );
+                        }
+                      );
                     }
                   }
                 );

@@ -75,6 +75,12 @@ app.use("/biography-pictures", biographyPictures);
 
 app.use("/paypal", paypalRouter);
 
+if (getConfig().mode === "prod") {
+  app.get("*", (req, res) => {
+    res.sendFile("/home/maia/site/maia_back_end/public/index.html");
+  });
+}
+
 if (getConfig().mode === "dev") {
   app.listen(8001);
 } else {
@@ -89,13 +95,13 @@ if (getConfig().mode === "dev") {
   httpsServer.listen(443, () => {
     console.log("HTTPS running... port 443");
   });
-}
 
-/*http
-  .createServer((req, res) => {
-    res.writeHead(301, {
-      Location: "https://" + req.headers["host"] + req.url,
-    });
-    res.end();
-  })
-  .listen(80); */
+  http
+    .createServer((req, res) => {
+      res.writeHead(301, {
+        Location: "https://" + req.headers["host"] + req.url,
+      });
+      res.end();
+    })
+    .listen(80);
+}
