@@ -40,15 +40,21 @@ router.post("/", (req, res) => {
       res.status(500).json({ message: "error to login" });
     } else {
       if (result.length === 1) {
-        const userId = result[0].id;
+        if (result[0].active === 1) {
+          const userId = result[0].id;
 
-        console.log(req.session);
+          console.log(req.session);
 
-        req.session.user = { email, userId };
+          req.session.user = { email, userId };
 
-        res
-          .status(200)
-          .json({ message: "The user and password are valids", userId });
+          res
+            .status(200)
+            .json({ message: "The user and password are valids", userId });
+        } else {
+          //El usuario aun no verifico el e-mail
+
+          res.status(403).json({ message: "You must confirm your email." });
+        }
       } else {
         res
           .status(401)

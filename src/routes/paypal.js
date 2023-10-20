@@ -277,7 +277,12 @@ router.post("/capture-order", async (req, res) => {
                             sqlCart,
                             valuesSqlCart,
                             (error, resultCart) => {
-                              sendEmail(resultCart, resultUser[0]);
+                              sendEmail(
+                                resultCart,
+                                resultUser[0],
+                                emailTypes.PURCHASE_SUCCESS,
+                                "PURCHASE SUCCESS"
+                              );
 
                               res.status(201).json(response);
                             }

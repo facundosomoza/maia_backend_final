@@ -34,6 +34,8 @@ const biographyPictures = require("./routes/biography-pictures");
 
 const paypalRouter = require("./routes/paypal");
 
+const registerRouter = require("./routes/register-router");
+
 const { getConfig } = require("./utils/config");
 
 const app = express();
@@ -74,6 +76,8 @@ app.use("/admin-pictures", adminPictures);
 app.use("/biography-pictures", biographyPictures);
 
 app.use("/paypal", paypalRouter);
+
+app.use("/register", registerRouter);
 
 if (getConfig().mode === "prod") {
   app.get("*", (req, res) => {

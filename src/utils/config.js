@@ -12,8 +12,8 @@ const config = {
   },
   prod: {
     db: {
-      HOST: "159.65.57.142",
-      USER: "maia_remote",
+      HOST: "149.50.130.247",
+      USER: "maia",
       PASSWORD: "maiA2525",
       DATABASE: "maia_art",
     },

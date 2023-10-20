@@ -50,7 +50,7 @@ const getPurchaseSuccessEmailTemplate = (purchaseDetail, user) => {
   emailHTML += `<h2>Total: USD ${totalAmount}</h2>`;
 
   const purchaseSuccessEmailTemplate = {
-    text: "Plain Text SUCCESS",
+    text: "Plain Text SUCCESS, TO DO!!!",
     html: emailHTML,
   };
 
