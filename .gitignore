@@ -1,9 +1,0 @@
-# dependencies
-/node_modules
-
-# sessions
-/sessions
-/src/sessions
-
-#data
-/src/config

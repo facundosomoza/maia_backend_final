@@ -1,13 +1,15 @@
-const express = require("express");
-const connection = require("../connection");
+const express = require('express');
+const connection = require('../connection');
 
-const path = require("path");
-const fs = require("fs");
+const path = require('path');
+const fs = require('fs');
 
 const router = express.Router();
 
 const getPictures = (req, res, id) => {
   const sqlValues = [];
+
+  console.log('HEre...');
 
   let sql = `SELECT * 
              FROM cuadros_arte`;
@@ -22,7 +24,7 @@ const getPictures = (req, res, id) => {
   connection.query(sql, sqlValues, (error, resultObras) => {
     if (error) {
       console.log(error.message);
-      res.status(500).json({ message: "error to get the pictures" });
+      res.status(500).json({ message: 'error to get the pictures' });
     } else {
       let cant = 0;
 
@@ -36,7 +38,7 @@ const getPictures = (req, res, id) => {
           connection.query(sqlImagenesDeLaObra, (error, resultImagenes) => {
             if (error) {
               console.log(error.message);
-              res.status(500).json({ message: "error to get the pictures" });
+              res.status(500).json({ message: 'error to get the pictures' });
             } else {
               console.log(resultImagenes);
 
@@ -65,11 +67,11 @@ const getPictures = (req, res, id) => {
   });
 };
 
-router.get("/", (req, res) => {
+router.get('/', (req, res) => {
   getPictures(req, res);
 });
 
-router.get("/:id", (req, res) => {
+router.get('/:id', (req, res) => {
   const id = req.params.id;
 
   getPictures(req, res, id);
@@ -78,12 +80,12 @@ router.get("/:id", (req, res) => {
 const getInsertPicturesArtQuery = (idNewPicture, imageFiles) => {
   const sql = `INSERT INTO imagenes_cuadros_arte (id_cuadros_arte, file_image, order_file)
                VALUES  ${imageFiles
-                 .map((imageFileName) => "(?, ?, ?)")
+                 .map((imageFileName) => '(?, ?, ?)')
                  .join()}`;
 
   const values = [];
 
-  console.log("IMAGENES A INSERTAR EN UPDATE", imageFiles);
+  console.log('IMAGENES A INSERTAR EN UPDATE', imageFiles);
 
   imageFiles.forEach((file) => {
     values.push(idNewPicture);
@@ -95,7 +97,7 @@ const getInsertPicturesArtQuery = (idNewPicture, imageFiles) => {
 };
 
 const uploadImages = (filesToUpload) => {
-  let imageFileName = "";
+  let imageFileName = '';
   const imagesFileNames = [];
 
   let i = 1;
@@ -114,19 +116,19 @@ const uploadImages = (filesToUpload) => {
   return imagesFileNames;
 };
 
-router.post("/", (req, res) => {
+router.post('/', (req, res) => {
   const newName = req.body.newName;
   const newPrice = req.body.newPrice;
   const newDescription = req.body.newDescription;
 
   const orderKeys = Object.keys(req.body).filter((key) =>
-    key.includes("order_")
+    key.includes('order_')
   );
 
   console.log(newName, newPrice, newDescription, orderKeys);
 
   orderKeys.forEach((orderKey) => {
-    const pos = orderKey.split("_")[1];
+    const pos = orderKey.split('_')[1];
 
     console.log(pos, req.body[orderKey]);
   });
@@ -139,13 +141,13 @@ router.post("/", (req, res) => {
     imagesFileNames = uploadImages(req.files);
   }
 
-  console.log("Nombres archivos a subir...", imagesFileNames);
+  console.log('Nombres archivos a subir...', imagesFileNames);
 
   const imageFiles = imagesFileNames.map((imageFileName, index) => {
     return { name: imageFileName, order: req.body[`order_${index + 1}`] };
   });
 
-  console.log("imageFiles...", imageFiles);
+  console.log('imageFiles...', imageFiles);
 
   const lastOrderQuery = `SELECT MAX(order_picture) AS last_order
                           FROM cuadros_arte`;
@@ -155,7 +157,7 @@ router.post("/", (req, res) => {
 
     if (error) {
       console.log(error.message);
-      res.json({ message: "error to upload the picture" });
+      res.json({ message: 'error to upload the picture' });
     } else {
       if (result.length > 0 && result[0]) {
         lastOrder = result[0].last_order;
@@ -172,7 +174,7 @@ router.post("/", (req, res) => {
       connection.query(sql, values, (error, result) => {
         if (error) {
           console.log(error.message);
-          res.json({ message: "error to upload the picture" });
+          res.json({ message: 'error to upload the picture' });
         } else {
           // Guardar la ruta de la imagen en la tabla "imagenes_cuadros_arte"
 
@@ -183,12 +185,12 @@ router.post("/", (req, res) => {
             imageFiles
           );
 
-          console.log("SQL...", sql, values);
+          console.log('SQL...', sql, values);
 
           connection.query(sql, values, (error, result) => {
             if (error) {
               console.log(error.message);
-              res.json({ message: "error to upload the picture" });
+              res.json({ message: 'error to upload the picture' });
             } else {
               res.json(result);
             }
@@ -217,14 +219,14 @@ const updatePictureArt = ({
   connection.query(sql, (error, result) => {
     if (error) {
       console.log(error.message);
-      res.json({ message: "error to update the picture" });
+      res.json({ message: 'error to update the picture' });
     } else {
       res.json(result);
     }
   });
 };
 
-router.put("/order_pictures", (req, res) => {
+router.put('/order_pictures', (req, res) => {
   const newOrders = req.body;
 
   const cantImages = newOrders.length;
@@ -240,29 +242,29 @@ router.put("/order_pictures", (req, res) => {
     connection.query(sql, (error, result) => {
       if (error) {
         console.log(error.message);
-        res.status(500).json({ message: "Error updating picture order" });
+        res.status(500).json({ message: 'Error updating picture order' });
       } else {
         updatedImagesCounter++;
 
         if (updatedImagesCounter === cantImages) {
           res
             .status(200)
-            .json({ message: "Picture order updated succesfully" });
+            .json({ message: 'Picture order updated succesfully' });
         }
       }
     });
   });
 });
 
-router.put("/:id", (req, res) => {
+router.put('/:id', (req, res) => {
   const orderKeys = Object.keys(req.body).filter((key) =>
-    key.includes("order_")
+    key.includes('order_')
   );
 
   orderKeys.forEach((key) => {
-    console.log(key.split("_")[1], req.body[key]);
+    console.log(key.split('_')[1], req.body[key]);
 
-    const id_cuadros_arte = key.split("_")[1];
+    const id_cuadros_arte = key.split('_')[1];
     const newOrder = req.body[key];
 
     const sql = `UPDATE imagenes_cuadros_arte 
@@ -286,7 +288,7 @@ router.put("/:id", (req, res) => {
       const fileOriginalIndex = file.charAt(4);
 
       const originalFileName = req.body[`originalFile${fileOriginalIndex}`]
-        .split("/")
+        .split('/')
         .pop();
 
       imageToUpload.mv(`./public/images/pictures_art/${originalFileName}`);
@@ -300,7 +302,7 @@ router.put("/:id", (req, res) => {
       res,
     });
   } else {
-    console.log("No hay archivo para modificar!");
+    console.log('No hay archivo para modificar!');
 
     updatePictureArt({
       newName: req.body.newName,
@@ -314,7 +316,7 @@ router.put("/:id", (req, res) => {
   console.log(req.body);
 });
 
-router.put("/:id/sold", (req, res) => {
+router.put('/:id/sold', (req, res) => {
   const imageId = req.params.id;
   const { sold } = req.body;
 
@@ -325,14 +327,14 @@ router.put("/:id/sold", (req, res) => {
   connection.query(sql, (error, result) => {
     if (error) {
       console.log(error.message);
-      res.status(500).json({ message: "error updating sold" });
+      res.status(500).json({ message: 'error updating sold' });
     } else {
-      res.status(200).json({ message: "succesfully updated" });
+      res.status(200).json({ message: 'succesfully updated' });
     }
   });
 });
 
-router.delete("/:id", (req, res) => {
+router.delete('/:id', (req, res) => {
   const pictureId = req.params.id;
 
   console.log(pictureId);
@@ -344,7 +346,7 @@ router.delete("/:id", (req, res) => {
   connection.query(sqlOrderCuadroArteToDelete, [pictureId], (error, result) => {
     if (error) {
       console.log(error.message);
-      res.status(500).json({ message: "Error deleting picture" });
+      res.status(500).json({ message: 'Error deleting picture' });
     } else {
       const sqlDeleteFromPurchasesDetail = `DELETE FROM purchases_detail
                                             WHERE id_obra_arte = ?`;
@@ -356,9 +358,9 @@ router.delete("/:id", (req, res) => {
         sqlValues,
         (errorDeleteFromPurchaseDetail, resultDeleteFromPurchaseDetail) => {
           if (errorDeleteFromPurchaseDetail) {
-            res.status(500).json({ message: "Error deleting picture" });
+            res.status(500).json({ message: 'Error deleting picture' });
           } else {
-            console.log("El order es", result[0].order_picture);
+            console.log('El order es', result[0].order_picture);
 
             const orderImageToDelete = result[0].order_picture;
 
@@ -369,13 +371,13 @@ router.delete("/:id", (req, res) => {
             connection.query(sqlImagesCuadroArte, (error, result) => {
               if (error) {
                 console.log(error.message);
-                res.status(500).json({ message: "Error deleting picture" });
+                res.status(500).json({ message: 'Error deleting picture' });
               } else {
                 const filesToDelete = result;
 
                 for (let fileToDelete of filesToDelete) {
                   console.log(
-                    "borrar",
+                    'borrar',
                     `./public/images/pictures_art/${fileToDelete.file_image}`
                   );
                   fs.unlinkSync(
@@ -390,7 +392,7 @@ router.delete("/:id", (req, res) => {
                 connection.query(deletePictureArtFromCarts, (error, result) => {
                   if (error) {
                     console.log(error.message);
-                    res.status(500).json({ message: "Error deleting picture" });
+                    res.status(500).json({ message: 'Error deleting picture' });
                   } else {
                     const deleteImagesQuery = `DELETE FROM imagenes_cuadros_arte
                 WHERE id_cuadros_arte = ${pictureId}`;
@@ -400,7 +402,7 @@ router.delete("/:id", (req, res) => {
                         console.log(error.message);
                         res
                           .status(500)
-                          .json({ message: "Error deleting picture" });
+                          .json({ message: 'Error deleting picture' });
                       } else {
                         const deletePictureQuery = `DELETE FROM cuadros_arte
                             WHERE id = ${pictureId}`;
@@ -412,7 +414,7 @@ router.delete("/:id", (req, res) => {
                               console.log(error.message);
                               res
                                 .status(500)
-                                .json({ message: "Error deleting picture" });
+                                .json({ message: 'Error deleting picture' });
                             } else {
                               //Reorder
 
@@ -427,11 +429,11 @@ router.delete("/:id", (req, res) => {
                                   if (error) {
                                     console.log(error.message);
                                     res.status(500).json({
-                                      message: "Error deleting picture",
+                                      message: 'Error deleting picture',
                                     });
                                   } else {
                                     res.status(200).json({
-                                      message: "picture deleted succesfully",
+                                      message: 'picture deleted succesfully',
                                     });
                                   }
                                 }

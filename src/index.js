@@ -36,6 +36,8 @@ const paypalRouter = require("./routes/paypal");
 
 const registerRouter = require("./routes/register-router");
 
+const countriesRouter = require("./routes/countries");
+
 const { getConfig } = require("./utils/config");
 
 const app = express();
@@ -79,6 +81,8 @@ app.use("/paypal", paypalRouter);
 
 app.use("/register", registerRouter);
 
+app.use("/countries", countriesRouter);
+
 if (getConfig().mode === "prod") {
   app.get("*", (req, res) => {
     res.sendFile("/home/maia/site/maia_back_end/public/index.html");
@@ -90,8 +94,8 @@ if (getConfig().mode === "dev") {
 } else {
   const httpsServer = https.createServer(
     {
-      key: fs.readFileSync("src/certs/maiatsadzeart_com.key"),
-      cert: fs.readFileSync("src/certs/maiatsadzeart_com.crt"),
+      key: fs.readFileSync("certs/maiatsintsadzeart.com.key"),
+      cert: fs.readFileSync("certs/maiatsintsadzeart.com.crt"),
     },
     app
   );

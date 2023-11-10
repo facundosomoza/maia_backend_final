@@ -1,13 +1,13 @@
-const connection = require("../connection");
-const emailTypes = require("../utils/email_types");
+const connection = require('../connection');
+const emailTypes = require('../utils/email_types');
 
 /* PAYPAL SANDBOX */
 
 const CLIENT_ID =
-  "AUsVdu_ALzBec4O2PpwAdMhbeZpLCAxUsrcl49tDo_D7vTzR3LoYpBFIfUsn986cd6JBXno64uCwYVSy";
+  'AUsVdu_ALzBec4O2PpwAdMhbeZpLCAxUsrcl49tDo_D7vTzR3LoYpBFIfUsn986cd6JBXno64uCwYVSy';
 
 const CLIENT_SECRET =
-  "ENKIFmXupwnsBRpd2DIFh6a30GyOBP-ymFIpCM537bd1o7ZE0K4wbEmbJb7R24NwBhpqEV23RwnT8BAT";
+  'ENKIFmXupwnsBRpd2DIFh6a30GyOBP-ymFIpCM537bd1o7ZE0K4wbEmbJb7R24NwBhpqEV23RwnT8BAT';
 
 /* PAYPAL LIVE */
 
@@ -19,11 +19,11 @@ const CLIENT_SECRET =
 const CLIENT_SECRET =
   "EPobzdv-928DrvG1j1UA1_PtL3nU0pdR6YrID2X8ZhxbeKjm5x-zM02XcNtj0kw9f5nty5vnxCOXS0JO"; */
 
-const express = require("express");
+const express = require('express');
 
-const paypal = require("@paypal/checkout-server-sdk");
-const checkoutServerSdk = require("@paypal/checkout-server-sdk");
-const sendEmail = require("../utils/mailing");
+const paypal = require('@paypal/checkout-server-sdk');
+const checkoutServerSdk = require('@paypal/checkout-server-sdk');
+const sendEmail = require('../utils/mailing');
 
 //SANDBOX ENVIRONMENT
 const paylEnv = new paypal.core.SandboxEnvironment(CLIENT_ID, CLIENT_SECRET);
@@ -35,8 +35,8 @@ const client = new paypal.core.PayPalHttpClient(paylEnv);
 
 const router = express.Router();
 
-router.post("/createorder", (req, res) => {
-  console.log("Creando orden desde el back", req.body);
+router.post('/createorder', (req, res) => {
+  console.log('Creando orden desde el back', req.body);
 
   const userId = req.session.user.userId;
 
@@ -62,7 +62,7 @@ router.post("/createorder", (req, res) => {
   } = userData;
 
   console.log(
-    "BODY",
+    'BODY',
     firstName,
     surname,
     address,
@@ -84,7 +84,7 @@ router.post("/createorder", (req, res) => {
     address,
     city,
     county,
-    firstName + " " + surname,
+    firstName + ' ' + surname,
     eircode,
     mobileNumber,
     userId,
@@ -96,7 +96,7 @@ router.post("/createorder", (req, res) => {
     (error, resultInsertPurchase) => {
       if (error) {
         //Devolver mensaje al cliente
-        console.log("Error al guardar la compra", error.message);
+        console.log('Error al guardar la compra', error.message);
       } else {
         //Guardar el detalle del carrito
         const idNewPurchase = resultInsertPurchase.insertId;
@@ -118,23 +118,23 @@ router.post("/createorder", (req, res) => {
             purchaseDetailValues,
             async (error, result) => {
               if (error) {
-                console.log("Error al guardar el item del carrito");
+                console.log('Error al guardar el item del carrito');
               } else {
                 insertCounter++;
 
                 if (insertCounter === cart.length) {
                   request.requestBody({
-                    intent: "CAPTURE",
+                    intent: 'CAPTURE',
                     purchase_units: [
                       {
                         amount: {
-                          currency_code: "USD",
+                          currency_code: 'EUR',
                           value: totalAmount.toString(),
                         },
                       },
                     ],
                     application_context: {
-                      shipping_preference: "NO_SHIPPING",
+                      shipping_preference: 'NO_SHIPPING',
                     },
                   });
 
@@ -159,7 +159,7 @@ router.post("/createorder", (req, res) => {
                     valuesUpdatePurchasePaypalId,
                     (error, result) => {
                       if (error) {
-                        console.log("Error al guardar el order_id de paypal");
+                        console.log('Error al guardar el order_id de paypal');
                       } else {
                         res.json(response.result);
                       }
@@ -175,7 +175,7 @@ router.post("/createorder", (req, res) => {
   );
 });
 
-router.post("/capture-order", async (req, res) => {
+router.post('/capture-order', async (req, res) => {
   try {
     const request = new checkoutServerSdk.orders.OrdersCaptureRequest(
       req.body.orderID
@@ -187,7 +187,7 @@ router.post("/capture-order", async (req, res) => {
 
     const paypalOrderId = req.body.orderID;
 
-    console.log("REGISTRAR COMO PAGADO ...", paypalOrderId);
+    console.log('REGISTRAR COMO PAGADO ...', paypalOrderId);
 
     const sqlUpdatePagoPaypal = `UPDATE purchases
                                   SET estado_pago = 'pagado'
@@ -201,7 +201,7 @@ router.post("/capture-order", async (req, res) => {
       valuesUpdatePagoPaypal,
       (error, result) => {
         if (error) {
-          console.log("Error al registrar el pago en la bd");
+          console.log('Error al registrar el pago en la bd');
         } else {
           //Poner las obras como SOLD
 
@@ -224,7 +224,7 @@ router.post("/capture-order", async (req, res) => {
             valuesSqlUpdateSold,
             (error, result) => {
               if (error) {
-                console.log("Error al cambiar a SOLD");
+                console.log('Error al cambiar a SOLD');
               } else {
                 //Vaciar el carrito
 
@@ -241,7 +241,7 @@ router.post("/capture-order", async (req, res) => {
                   valuesDeleteCart,
                   (error, result) => {
                     if (error) {
-                      console.log("Error al vaciar el carrito");
+                      console.log('Error al vaciar el carrito');
                     } else {
                       console.log(response);
 
@@ -281,7 +281,7 @@ router.post("/capture-order", async (req, res) => {
                                 resultCart,
                                 resultUser[0],
                                 emailTypes.PURCHASE_SUCCESS,
-                                "PURCHASE SUCCESS"
+                                'PURCHASE SUCCESS'
                               );
 
                               res.status(201).json(response);
@@ -304,7 +304,7 @@ router.post("/capture-order", async (req, res) => {
   }
 });
 
-router.post("/notification", async (req, res) => {
+router.post('/notification', async (req, res) => {
   console.log(req.body);
 
   req.status(200).json({});

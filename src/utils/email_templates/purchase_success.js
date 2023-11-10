@@ -41,16 +41,16 @@ const getPurchaseSuccessEmailTemplate = (purchaseDetail, user) => {
   purchaseDetail.forEach(
     ({ name, price }) =>
       (emailHTML += `<li>
-                        ${name}: USD ${price}
+                        ${name}: € ${price}
                     </li>`)
   );
 
   emailHTML += `</ul>`;
 
-  emailHTML += `<h2>Total: USD ${totalAmount}</h2>`;
+  emailHTML += `<h2>Total: € ${totalAmount}</h2>`;
 
   const purchaseSuccessEmailTemplate = {
-    text: "Plain Text SUCCESS, TO DO!!!",
+    text: 'Plain Text SUCCESS, TO DO!!!',
     html: emailHTML,
   };
 

@@ -1,9 +1,9 @@
-const express = require("express");
-const connection = require("../connection");
+const express = require('express');
+const connection = require('../connection');
 
 const router = express.Router();
 
-router.post("/add_to_cart", (req, res) => {
+router.post('/add_to_cart', (req, res) => {
   const idUsuario = req.body.userId;
   const idCuadrosArte = req.body.picture.id;
 
@@ -19,14 +19,14 @@ router.post("/add_to_cart", (req, res) => {
   connection.query(sql, values, (error, result) => {
     if (error) {
       console.log(error.message);
-      res.json({ message: "error to get the info" });
+      res.json({ message: 'error to get the info' });
     } else {
       res.json(result);
     }
   });
 });
 
-router.get("/:userId", (req, res) => {
+router.get('/:userId', (req, res) => {
   const sql = `SELECT *
                  FROM carrito
                  INNER JOIN cuadros_arte
@@ -35,9 +35,9 @@ router.get("/:userId", (req, res) => {
 
   connection.query(sql, (error, cartResult) => {
     if (error) {
-      res.json({ message: "error to get data" });
+      res.json({ message: 'error to get data' });
     } else {
-      console.log("llegue al else");
+      console.log('llegue al else');
       let cantQueriesTerminadas = 0;
 
       if (cartResult.length > 0) {
@@ -52,7 +52,7 @@ router.get("/:userId", (req, res) => {
 
           connection.query(sqlImagenes, (error, result) => {
             if (error) {
-              res.json({ message: "error to get the pictures" });
+              res.json({ message: 'error to get the pictures' });
             } else {
               cartItem.imagen = result[0].file_image;
               console.log(cartItem);
@@ -75,14 +75,14 @@ router.get("/:userId", (req, res) => {
   });
 });
 
-router.delete("/:idObraArte/:idUsuario", (req, res) => {
+router.delete('/:idObraArte/:idUsuario', (req, res) => {
   const sql = `DELETE FROM carrito
                 WHERE id_obra_arte=${req.params.idObraArte} AND id_usuario=${req.params.idUsuario}`;
 
   connection.query(sql, (error, result) => {
     if (error) {
       console.log(error.message);
-      res.json({ message: "error to delete user" });
+      res.json({ message: 'error to delete user' });
     } else {
       res.json(result);
     }
