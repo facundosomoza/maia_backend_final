@@ -96,6 +96,35 @@ if (getConfig().mode === "dev") {
     {
       key: fs.readFileSync("certs/maiatsintsadzeart.com.key"),
       cert: fs.readFileSync("certs/maiatsintsadzeart.com.crt"),
+      ca: [
+        fs.readFileSync("certs/CA/AAACertificateServices.crt"),
+        fs.readFileSync("certs/CA/SectigoPublicCodeSigningCAEVR36.crt"),
+        fs.readFileSync("certs/CA/SectigoPublicCodeSigningCAR36.crt"),
+        fs.readFileSync("certs/CA/SectigoPublicCodeSigningRootR46_AAA.crt"),
+        fs.readFileSync(
+          "certs/CA/SectigoRSAClientAuthenticationandSecureEmailCA.crt"
+        ),
+        fs.readFileSync("certs/CA/SectigoRSACodeSigningCA.crt"),
+        fs.readFileSync(
+          "certs/CA/SectigoRSADomainValidationSecureServerCA.crt"
+        ),
+        fs.readFileSync("certs/CA/SectigoRSADVBundle.pem"),
+        fs.readFileSync("certs/CA/SectigoRSAEVBundle.pem"),
+        fs.readFileSync(
+          "certs/CA/SectigoRSAExtendedValidationCodeSigningCA.crt"
+        ),
+        fs.readFileSync(
+          "certs/CA/SectigoRSAExtendedValidationSecureServerCA.crt"
+        ),
+        fs.readFileSync(
+          "certs/CA/SectigoRSAOrganizationValidationSecureServerCA.crt"
+        ),
+        fs.readFileSync("certs/CA/SectigoRSAOVBundle.pem"),
+        fs.readFileSync(
+          "certs/CA/SHA-2 Root  USERTrust RSA Certification Authority.crt"
+        ),
+        fs.readFileSync("certs/CA/USERTrustRSA-AAACA-xSign.crt"),
+      ],
     },
     app
   );
