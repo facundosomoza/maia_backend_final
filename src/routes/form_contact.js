@@ -1,5 +1,7 @@
 const express = require("express");
 const connection = require("../connection");
+const sendEmail = require("../utils/mailing");
+const emailTypes = require("../utils/email_types");
 
 const router = express.Router();
 
@@ -17,6 +19,32 @@ router.post("/", (req, res) => {
     if (error) {
       res.json({ message: "Error al registrar el mensaje" });
     } else {
+      sendEmail(
+        {
+          email: "mtsadzeart@gmail.com",
+          firstName,
+          lastName,
+          subject,
+          message,
+          userEmail: email,
+        },
+        null,
+        emailTypes.FORM_CONTACT,
+        "CONTACT"
+      );
+
+      sendEmail(
+        {
+          email,
+          firstName,
+          lastName,
+          message,
+        },
+        null,
+        emailTypes.FORM_CONTACT_FOR_USER,
+        "CONTACT CONFIRMATION"
+      );
+
       res.json({ message: "Mensaje registrado correctamente" });
     }
   });

@@ -89,18 +89,35 @@ router.put("/change_password", (req, res) => {
 
   console.log("Cambiar la password RECOVERy", recoveryToken, passwordNew);
 
-  const sqlPasswordRecovery = `UPDATE users
-                               SET password = ?, 
-                                   hash = ""
-                               WHERE hash = ? `;
+  const sqlUserInfo = `SELECT id, email
+                       FROM users
+                       WHERE hash = ?`;
 
-  const sqlValues = [passwordNew, recoveryToken];
-
-  connection.query(sqlPasswordRecovery, sqlValues, (error, result) => {
+  connection.query(sqlUserInfo, [recoveryToken], (error, resultUserInfo) => {
     if (error) {
-      console.log("Error");
+      console.log("Error al obtener informacion del usuario");
     } else {
-      res.json("Password changed!");
+      const sqlPasswordRecovery = `UPDATE users
+                                   SET password = ?, 
+                                      hash = ""
+                                   WHERE hash = ? `;
+
+      const sqlValues = [passwordNew, recoveryToken];
+
+      connection.query(
+        sqlPasswordRecovery,
+        sqlValues,
+        (error, resultPasswordRecovery) => {
+          if (error) {
+            console.log("Error");
+          } else {
+            res.json({
+              userId: resultUserInfo[0].id,
+              email: resultUserInfo[0].email,
+            });
+          }
+        }
+      );
     }
   });
 });

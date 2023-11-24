@@ -84,8 +84,8 @@ app.use("/register", registerRouter);
 app.use("/countries", countriesRouter);
 
 if (getConfig().mode === "prod") {
-  app.get("*", (req, res) => {
-    res.sendFile("/home/maia/site/maia_back_end/public/index.html");
+  app.get("/", (req, res) => {
+    res.sendFile("/home/maiaweb/final/backend/public/index.html");
   });
 }
 
@@ -96,7 +96,7 @@ if (getConfig().mode === "dev") {
     {
       key: fs.readFileSync("certs/maiatsintsadzeart.com.key"),
       cert: fs.readFileSync("certs/maiatsintsadzeart.com.crt"),
-      ca: [
+      /* ca: [
         fs.readFileSync("certs/CA/AAACertificateServices.crt"),
         fs.readFileSync("certs/CA/SectigoPublicCodeSigningCAEVR36.crt"),
         fs.readFileSync("certs/CA/SectigoPublicCodeSigningCAR36.crt"),
@@ -124,7 +124,7 @@ if (getConfig().mode === "dev") {
           "certs/CA/SHA-2 Root  USERTrust RSA Certification Authority.crt"
         ),
         fs.readFileSync("certs/CA/USERTrustRSA-AAACA-xSign.crt"),
-      ],
+      ], */
     },
     app
   );
